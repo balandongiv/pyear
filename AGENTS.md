@@ -91,7 +91,11 @@ unittest/
 * Use clear, structured docstrings (Google or reStructuredText format).
 * Explicitly document parameters, returns, and exceptions.
 * Type annotations (`typing`) are mandatory for clarity and maintainability.
+* Detail docstrings for all public functions and uni test, including:
 
+  * **Parameters**: Types and descriptions.
+  * **Returns**: Expected types and structure.
+  * **Raises**: Document any exceptions that may be raised.
 ### 🧪 Comprehensive Unit Testing
 
 * Thorough testing using `pytest` or Python’s `unittest`.
