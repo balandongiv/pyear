@@ -9,6 +9,7 @@ import pandas as pd
 
 from .blink_events.event_features import aggregate_blink_event_features
 from .morphology import aggregate_morphology_features
+from .kinematics import aggregate_kinematic_features
 
 # Configure root logger
 logging.basicConfig(level=logging.INFO)
@@ -37,8 +38,8 @@ def extract_features(
     features : Sequence[str] | None, optional
         Feature groups to compute. Values from
         :func:`aggregate_blink_event_features` (``"blink_count"``, ``"blink_rate"``,
-        ``"ibi"``) and ``"morphology"`` are recognized. ``None`` computes all
-        available features.
+        ``"ibi"``), ``"morphology`` and ``"kinematics"`` are recognized. ``None``
+        computes all available features.
 
     Returns
     -------
@@ -50,6 +51,10 @@ def extract_features(
     df_events = aggregate_blink_event_features(
         blinks, sfreq, epoch_len, n_epochs, features
     )
+
+    if features is None or "kinematics" in features:
+        df_kin = aggregate_kinematic_features(blinks, sfreq, n_epochs)
+        df_events = pd.concat([df_events, df_kin], axis=1)
 
     if features is None or "morphology" in features:
         df_morph = aggregate_morphology_features(blinks, sfreq, n_epochs)
