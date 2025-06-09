@@ -1,0 +1,40 @@
+"""Unit tests for energy and complexity feature extraction."""
+import unittest
+import math
+import logging
+
+from pyear.energy_complexity.energy_complexity_features import compute_energy_complexity_features
+from unitest.fixtures.mock_ear_generation import _generate_refined_ear
+
+logger = logging.getLogger(__name__)
+
+
+class TestEnergyComplexityFeatures(unittest.TestCase):
+    """Tests for energy and complexity metric calculations."""
+
+    def setUp(self) -> None:
+        blinks, sfreq, epoch_len, n_epochs = _generate_refined_ear()
+        self.sfreq = sfreq
+        self.per_epoch = [[] for _ in range(n_epochs)]
+        for blink in blinks:
+            self.per_epoch[blink["epoch_index"]].append(blink)
+
+    def test_first_epoch_features(self) -> None:
+        """Verify energy metrics for the first epoch."""
+        feats = compute_energy_complexity_features(self.per_epoch[0], self.sfreq)
+        logger.debug(f"Energy features epoch 0: {feats}")
+        self.assertTrue(math.isclose(feats["blink_signal_energy_mean"], 0.007137))
+        self.assertTrue(math.isclose(feats["blink_line_length_mean"], 0.38))
+        self.assertTrue(math.isclose(feats["blink_velocity_integral_mean"], 0.19))
+
+    def test_nan_with_no_blinks(self) -> None:
+        """Epoch without blinks should yield NaN for energy mean."""
+        feats = compute_energy_complexity_features(self.per_epoch[3], self.sfreq)
+        logger.debug(f"Energy features epoch 3: {feats}")
+        self.assertTrue(math.isnan(feats["blink_signal_energy_mean"]))
+        self.assertTrue(math.isnan(feats["blink_line_length_mean"]))
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    unittest.main()
