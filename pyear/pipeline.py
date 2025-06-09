@@ -8,6 +8,7 @@ from typing import Iterable, Dict, Sequence
 import pandas as pd
 
 from .blink_events.event_features import aggregate_blink_event_features
+from .morphology import aggregate_morphology_features
 
 # Configure root logger
 logging.basicConfig(level=logging.INFO)
@@ -34,8 +35,9 @@ def extract_features(
     n_epochs : int
         Total number of epochs.
     features : Sequence[str] | None, optional
-        Feature groups to compute. Passed directly to
-        :func:`aggregate_blink_event_features`. ``None`` computes all
+        Feature groups to compute. Values from
+        :func:`aggregate_blink_event_features` (``"blink_count"``, ``"blink_rate"``,
+        ``"ibi"``) and ``"morphology"`` are recognized. ``None`` computes all
         available features.
 
     Returns
@@ -44,6 +46,16 @@ def extract_features(
         DataFrame with aggregated features per epoch.
     """
     logger.info("Starting feature extraction")
-    df = aggregate_blink_event_features(blinks, sfreq, epoch_len, n_epochs, features)
+
+    df_events = aggregate_blink_event_features(
+        blinks, sfreq, epoch_len, n_epochs, features
+    )
+
+    if features is None or "morphology" in features:
+        df_morph = aggregate_morphology_features(blinks, sfreq, n_epochs)
+        df = pd.concat([df_events, df_morph], axis=1)
+    else:
+        df = df_events
+
     logger.info("Finished feature extraction")
     return df
