@@ -76,6 +76,11 @@ unittest/
 
   * Facilitates easy debugging, clarity, and maintainability.
 
+**Feature selection flexibility**:
+
+  -   Allow users to select one or multiple specific features to calculate.
+
+  -   By default, assume the user intends to extract all available features.
 ### 🪵 Logging Standards
 
 * Define root logger configuration in `pipeline.py`
