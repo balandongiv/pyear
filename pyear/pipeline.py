@@ -11,6 +11,7 @@ from .blink_events.event_features import aggregate_blink_event_features
 from .morphology import aggregate_morphology_features
 from .kinematics import aggregate_kinematic_features
 from .energy_complexity import aggregate_energy_complexity_features
+from .open_eye import aggregate_open_eye_features
 
 # Configure root logger
 logging.basicConfig(level=logging.INFO)
@@ -39,8 +40,8 @@ def extract_features(
     features : Sequence[str] | None, optional
         Feature groups to compute. Values from
         :func:`aggregate_blink_event_features` (``"blink_count"``, ``"blink_rate"``,
-        ``"ibi"``), ``"morphology``, ``"kinematics`` and ``"energy`` are
-        recognized. ``None`` computes all available features.
+        ``"ibi"``), ``"morphology``, ``"kinematics``, ``"energy`` and
+        ``"open_eye"`` are recognized. ``None`` computes all available features.
 
     Returns
     -------
@@ -60,6 +61,10 @@ def extract_features(
     if features is None or "energy" in features:
         df_energy = aggregate_energy_complexity_features(blinks, sfreq, n_epochs)
         df_events = pd.concat([df_events, df_energy], axis=1)
+
+    if features is None or "open_eye" in features:
+        df_open = aggregate_open_eye_features(blinks, sfreq, n_epochs)
+        df_events = pd.concat([df_events, df_open], axis=1)
 
     if features is None or "morphology" in features:
         df_morph = aggregate_morphology_features(blinks, sfreq, n_epochs)
