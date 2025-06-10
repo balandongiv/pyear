@@ -1,0 +1,54 @@
+"""Amplitude-velocity ratio metrics.
+
+These functions quantify blink steepness by comparing blink amplitude to
+velocity extremes.
+
+Example
+-------
+>>> from pyear.waveform_features.features.amp_vel_ratio_features import neg_amp_vel_ratio_zero
+>>> ratio = neg_amp_vel_ratio_zero(blink, sfreq=100.0)
+"""
+from __future__ import annotations
+
+import logging
+from typing import Dict, Any
+
+import numpy as np
+
+logger = logging.getLogger(__name__)
+
+
+def neg_amp_vel_ratio_zero(blink: Dict[str, Any], sfreq: float) -> float:
+    """Compute negative amplitude-velocity ratio based on zero landmarks.
+
+    Parameters
+    ----------
+    blink : dict
+        Blink annotation containing ``refined_peak_frame``, ``refined_end_frame``
+        and ``epoch_signal``.
+    sfreq : float
+        Sampling frequency in Hertz.
+
+    Returns
+    -------
+    float
+        Ratio of blink amplitude to maximum downward velocity. ``nan`` if
+        velocity cannot be computed.
+    """
+    start = int(blink["refined_start_frame"])
+    end = int(blink["refined_end_frame"])
+    peak = int(blink["refined_peak_frame"])
+    signal = np.asarray(blink["epoch_signal"], dtype=float)
+    segment = signal[start : end + 1]
+    baseline = signal[start]
+    amplitude = baseline - np.min(segment)
+    dt = 1.0 / sfreq
+    velocity = np.gradient(segment, dt)
+    if velocity.size == 0:
+        return float("nan")
+    neg_vel = np.min(velocity)
+    if neg_vel == 0:
+        return float("nan")
+    ratio = amplitude / abs(neg_vel)
+    logger.debug("neg_amp_vel_ratio_zero=%s", ratio)
+    return float(ratio)
