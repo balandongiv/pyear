@@ -1,4 +1,12 @@
-"""Blink morphology feature calculations."""
+"""Blink morphology feature calculations.
+
+This module provides summary statistics of blink width (duration) and
+height (amplitude), which are key descriptors of blink intensity.
+The implementation adapts blink summary logic from the `Jena Facial
+Palsy Tool <https://github.com/cvjena/JeFaPaTo>`_. These metrics are
+widely used to study neuromuscular control and fatigue-related changes
+in blinking and are also available in the Jena Facial Palsy Toolbox.
+"""
 from __future__ import annotations
 
 from typing import Dict, List, Any
