@@ -1,12 +1,15 @@
-"""Amplitude-velocity ratio metrics.
+"""Amplitude‑velocity ratio metrics.
 
-These functions quantify blink steepness by comparing blink amplitude to
-velocity extremes.
+This module adapts the amplitude‑velocity ratio concept from the
+`BLINKER`_ project.  The functions quantify blink steepness by comparing
+amplitude changes in the eye aspect ratio to velocity extremes.
 
 Example
 -------
 >>> from pyear.waveform_features.features.amp_vel_ratio_features import neg_amp_vel_ratio_zero
 >>> ratio = neg_amp_vel_ratio_zero(blink, sfreq=100.0)
+
+.. _BLINKER: https://github.com/VisLab/EEG-Blinks
 """
 from __future__ import annotations
 
@@ -19,7 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 def neg_amp_vel_ratio_zero(blink: Dict[str, Any], sfreq: float) -> float:
-    """Compute negative amplitude-velocity ratio based on zero landmarks.
+    """Compute negative amplitude‑velocity ratio based on zero landmarks.
+
+    The implementation mirrors the method used in the `BLINKER`_ project
+    where the downward velocity peak is taken between the blink apex and
+    the reopening phase.
 
     Parameters
     ----------

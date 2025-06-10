@@ -1,12 +1,17 @@
-"""Duration-related blink metrics based on EAR waveform.
+"""Duration-related blink metrics based on the EAR waveform.
 
-This module provides functions to measure blink duration using simple
-landmarks derived from the eye aspect ratio (EAR) trace.
+This module adapts ideas from the `BLINKER`_ project and its
+`GitHub implementation`_ to compute simple blink durations.  The
+functions measure how long the eyelid remains closed based on landmarks
+derived from the eye aspect ratio (EAR) trace.
 
 Example
 -------
 >>> from pyear.waveform_features.features.duration_features import duration_base
 >>> feat = duration_base(blink, sfreq=100.0)
+
+.. _BLINKER: https://github.com/VisLab/EEG-Blinks
+.. _GitHub implementation: https://github.com/VisLab/EEG-Blinks
 """
 from __future__ import annotations
 
@@ -20,6 +25,11 @@ logger = logging.getLogger(__name__)
 
 def duration_base(blink: Dict[str, Any], sfreq: float) -> float:
     """Compute blink duration from baseline crossings.
+
+    This implementation is loosely adapted from the open-source
+    `BLINKER`_ code base, which extracts blink timing from eyelid
+    signals. It simply measures the interval between the refined
+    start and end frames.
 
     Parameters
     ----------
@@ -43,6 +53,10 @@ def duration_base(blink: Dict[str, Any], sfreq: float) -> float:
 
 def duration_zero(blink: Dict[str, Any], sfreq: float) -> float:
     """Compute blink duration using zero-slope landmarks.
+
+    This approach is inspired by the `BLINKER`_ toolkit, which
+    locates zero-crossings in the derivative of the EAR signal to
+    refine blink onset and offset.
 
     The zero landmarks correspond to where the first derivative of the EAR
     signal crosses zero at blink onset and offset. If such points cannot be

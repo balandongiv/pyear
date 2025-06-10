@@ -1,4 +1,11 @@
-"""Aggregate blink waveform-based features."""
+"""Aggregate blink waveform-based features.
+
+This module follows the feature definitions from the open-source
+`BLINKER`_ project but provides a minimal implementation focused on the
+duration and amplitude‑velocity metrics included here.
+
+.. _BLINKER: https://github.com/VisLab/EEG-Blinks
+"""
 from __future__ import annotations
 
 from typing import Iterable, Dict, Any, List
@@ -18,6 +25,10 @@ def aggregate_waveform_features(
     n_epochs: int,
 ) -> pd.DataFrame:
     """Aggregate waveform metrics across epochs.
+
+    The aggregation closely mirrors the approach used by the
+    `BLINKER`_ repository but is trimmed down to only a handful of
+    features in this package.
 
     Parameters
     ----------
