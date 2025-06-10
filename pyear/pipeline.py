@@ -12,6 +12,8 @@ from .morphology import aggregate_morphology_features
 from .kinematics import aggregate_kinematic_features
 from .energy_complexity import aggregate_energy_complexity_features
 from .open_eye import aggregate_open_eye_features
+from .ear_metrics import aggregate_ear_features
+from .blink_events.classification import aggregate_classification_features
 
 # Configure root logger
 logging.basicConfig(level=logging.INFO)
@@ -40,8 +42,9 @@ def extract_features(
     features : Sequence[str] | None, optional
         Feature groups to compute. Values from
         :func:`aggregate_blink_event_features` (``"blink_count"``, ``"blink_rate"``,
-        ``"ibi"``), ``"morphology``, ``"kinematics``, ``"energy`` and
-        ``"open_eye"`` are recognized. ``None`` computes all available features.
+        ``"ibi"``), ``"morphology``, ``"kinematics``, ``"energy``, ``"open_eye``,
+        ``"ear"`` and ``"classification"`` are recognized. ``None`` computes all
+        available features.
 
     Returns
     -------
@@ -53,6 +56,16 @@ def extract_features(
     df_events = aggregate_blink_event_features(
         blinks, sfreq, epoch_len, n_epochs, features
     )
+
+    if features is None or "ear" in features:
+        df_ear = aggregate_ear_features(blinks, sfreq, n_epochs)
+        df_events = pd.concat([df_events, df_ear], axis=1)
+
+    if features is None or "classification" in features:
+        df_cls = aggregate_classification_features(
+            blinks, sfreq, epoch_len, n_epochs
+        )
+        df_events = pd.concat([df_events, df_cls], axis=1)
 
     if features is None or "kinematics" in features:
         df_kin = aggregate_kinematic_features(blinks, sfreq, n_epochs)
