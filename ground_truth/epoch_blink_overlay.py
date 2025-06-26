@@ -10,7 +10,6 @@ Usage:
 """
 import logging
 from pathlib import Path
-from typing import List
 
 import mne
 import numpy as np
@@ -100,12 +99,12 @@ def main() -> None:
     )
     logging.getLogger().setLevel(logging.DEBUG)
 
-    fif_path = Path("ear_eog.fif")
+    fif_path = Path("../unitest/ear_eog.fif")
     logger.info(f"Reading raw FIF from {fif_path}")
     raw = mne.io.read_raw_fif(str(fif_path), preload=True)
 
     # Strategy 1: Crop & Save
-    slice_into_mini_raws(raw, Path("debug_epochs"))
+    slice_into_mini_raws(raw, Path("../debug_epochs"))
 
 
 
