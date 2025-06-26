@@ -61,7 +61,7 @@ unittest/
 
 * **Testing Inputs**:
 
-  * Use provided mock EAR signals (`unittest.mock_ear_generation`).
+  * Use provided mock EAR signals (`unittest.fixtures.mock_ear_generation`).
   * Ensure tests comprehensively cover both continuous and epoch scenarios.
 
 ### 📂 Feature Implementation Guidelines
