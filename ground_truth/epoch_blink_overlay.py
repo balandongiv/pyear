@@ -187,12 +187,15 @@ def main() -> None:
     )
 
     parser = argparse.ArgumentParser(description=__doc__)
+
     parser.add_argument(
         "--file",
         type=Path,
         default=Path("unitest/ear_eog.fif"),
         help="Path to FIF file",
     )
+
+
     parser.add_argument(
         "--out-dir",
         type=Path,
@@ -211,6 +214,8 @@ def main() -> None:
         default=Path("epoch_report.html"),
         help="Output HTML report",
     )
+ 
+ 
     parser.add_argument(
         "--save-segments",
         action="store_true",
