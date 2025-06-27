@@ -209,7 +209,7 @@ def create_argument_parser():
     )
     parser.add_argument(
         "--summary", type=Path,
-        default=Path("../unitest/ear_eog_blink_count_epoch.csv"),
+        default=Path("../unitest/output_ear_eog_blink_count_epoch.csv"),
         help="CSV file path for blink counts",
     )
     parser.add_argument(
