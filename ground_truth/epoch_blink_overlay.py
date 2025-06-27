@@ -187,7 +187,15 @@ def main() -> None:
     )
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--file", type=Path, required=True, help="Path to FIF file")
+
+    parser.add_argument(
+        "--file",
+        type=Path,
+        default=Path("unitest/ear_eog.fif"),
+        help="Path to FIF file",
+    )
+
+
     parser.add_argument(
         "--out-dir",
         type=Path,
@@ -197,7 +205,7 @@ def main() -> None:
     parser.add_argument(
         "--summary",
         type=Path,
-        default=Path("blink_count_epoch.csv"),
+        default=Path("unitest/ear_eog_blink_count_epoch.csv"),
         help="CSV file for blink counts",
     )
     parser.add_argument(
@@ -206,6 +214,8 @@ def main() -> None:
         default=Path("epoch_report.html"),
         help="Output HTML report",
     )
+ 
+ 
     parser.add_argument(
         "--save-segments",
         action="store_true",
