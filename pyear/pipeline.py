@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Dict, Sequence
+from typing import Iterable, Dict, Sequence, Optional
 
 import pandas as pd
+import mne
 
-from .blink_events.event_features import aggregate_blink_event_features
+from .blink_events.event_features import (
+    aggregate_blink_event_features,
+    aggregate_blink_interval_distribution,
+)
 from .morphology import aggregate_morphology_features
 from .kinematics import aggregate_kinematic_features
 from .energy_complexity import aggregate_energy_complexity_features
@@ -27,6 +31,7 @@ def extract_features(
     epoch_len: float,
     n_epochs: int,
     features: Sequence[str] | None = None,
+    raw_segments: Optional[Sequence[mne.io.BaseRaw]] = None,
 ) -> pd.DataFrame:
     """Extract blink features using provided blink annotations.
 
@@ -46,6 +51,9 @@ def extract_features(
         ``"ibi"``), ``"morphology``, ``"kinematics``, ``"energy``, ``"open_eye``,
         ``"ear"``, ``"waveform`` and ``"classification"`` are recognized. ``None`` computes all
         available features.
+    raw_segments : Sequence[mne.io.BaseRaw] | None, optional
+        Collection of 30-second raw segments with annotations. Required when
+        ``"blink_interval_dist"`` is among ``features``.
 
     Returns
     -------
@@ -57,6 +65,14 @@ def extract_features(
     df_events = aggregate_blink_event_features(
         blinks, sfreq, epoch_len, n_epochs, features
     )
+
+    if features is None or "blink_interval_dist" in features:
+        if raw_segments is None:
+            raise ValueError(
+                "raw_segments must be provided when blink_interval_dist is requested"
+            )
+        df_interval = aggregate_blink_interval_distribution(raw_segments, blink_label=None)
+        df_events = pd.concat([df_events, df_interval], axis=1)
 
     if features is None or "ear" in features:
         df_ear = aggregate_ear_features(blinks, sfreq, n_epochs)

@@ -1,7 +1,13 @@
-"""Unit tests for EAR waveform-based metrics."""
+"""Waveform feature extraction tests.
+
+Synthetic blinks are generated with ``mock_ear_generation`` for epoch-based
+tests.  Real ``mne.io.Raw`` segments from ``ear_eog.fif`` are also used to
+validate the aggregation functions on actual data.
+"""
 import unittest
 import math
 import logging
+import mne
 
 from pyear.waveform_features import (
     duration_base,
@@ -40,6 +46,39 @@ class TestWaveformFeatures(unittest.TestCase):
         logger.debug("Waveform feature columns: %s", df.columns)
         self.assertIn("duration_base_mean", df.columns)
         self.assertEqual(len(df), self.n_epochs)
+
+
+class TestWaveformRealRaw(unittest.TestCase):
+    """Validate waveform aggregation on a real raw segment."""
+
+    def setUp(self) -> None:
+        raw = mne.io.read_raw_fif("unitest/ear_eog.fif", preload=True, verbose=False)
+        self.sfreq = raw.info["sfreq"]
+        start, stop = 0.0, 30.0
+        self.signal = raw.get_data(picks="EAR-avg_ear", start=int(start * self.sfreq), stop=int(stop * self.sfreq))[0]
+        self.blinks = []
+        for onset, dur in zip(raw.annotations.onset, raw.annotations.duration):
+            if onset >= start and onset + dur <= stop:
+                s = int((onset - start) * self.sfreq)
+                e = int((onset + dur - start) * self.sfreq)
+                peak = (s + e) // 2
+                self.blinks.append(
+                    {
+                        "refined_start_frame": s,
+                        "refined_peak_frame": peak,
+                        "refined_end_frame": e,
+                        "epoch_signal": self.signal,
+                        "epoch_index": 0,
+                    }
+                )
+
+    def test_first_segment(self) -> None:
+        """Waveform features from the first raw segment match expected values."""
+        df = aggregate_waveform_features(self.blinks, self.sfreq, 1)
+        logger.debug("Real raw waveform features: %s", df.iloc[0].to_dict())
+        self.assertAlmostEqual(df.loc[0, "duration_base_mean"], 0.23)
+        self.assertAlmostEqual(df.loc[0, "duration_zero_mean"], 0.17)
+        self.assertAlmostEqual(df.loc[0, "neg_amp_vel_ratio_zero_mean"], 0.04419523700883515)
 
 
 if __name__ == "__main__":

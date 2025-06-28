@@ -1,4 +1,8 @@
-"""Unit tests for open-eye period features."""
+"""Unit tests for open-eye period features using synthetic data.
+
+Blink annotations and epoch signals are generated via the
+``mock_ear_generation`` fixture creating :class:`mne.Epochs` objects.
+"""
 import unittest
 import math
 import logging
