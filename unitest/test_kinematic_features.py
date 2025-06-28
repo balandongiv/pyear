@@ -1,7 +1,13 @@
-"""Unit tests for blink kinematic feature extraction."""
+"""Kinematic feature extraction tests.
+
+Synthetic blink waveforms are produced with ``mock_ear_generation`` for
+``mne.Epochs``-based tests.  Additional tests rely on raw segments taken from
+``ear_eog.fif`` so that real data paths are covered as well.
+"""
 import unittest
 import math
 import logging
+import mne
 
 from pyear.kinematics.kinematic_features import compute_kinematic_features
 from unitest.fixtures.mock_ear_generation import _generate_refined_ear
@@ -34,6 +40,39 @@ class TestKinematicFeatures(unittest.TestCase):
         logger.debug(f"Kinematic features epoch 3: {feats}")
         self.assertTrue(math.isnan(feats["blink_velocity_mean"]))
         self.assertTrue(math.isnan(feats["blink_avr_mean"]))
+
+
+class TestKinematicRealRaw(unittest.TestCase):
+    """Validate kinematic metrics on a real raw segment."""
+
+    def setUp(self) -> None:
+        raw = mne.io.read_raw_fif("unitest/ear_eog.fif", preload=True, verbose=False)
+        self.sfreq = raw.info["sfreq"]
+        start, stop = 0.0, 30.0
+        signal = raw.get_data(picks="EAR-avg_ear", start=int(start * self.sfreq), stop=int(stop * self.sfreq))[0]
+        self.blinks = []
+        for onset, dur in zip(raw.annotations.onset, raw.annotations.duration):
+            if onset >= start and onset + dur <= stop:
+                s = int((onset - start) * self.sfreq)
+                e = int((onset + dur - start) * self.sfreq)
+                peak = (s + e) // 2
+                self.blinks.append(
+                    {
+                        "refined_start_frame": s,
+                        "refined_peak_frame": peak,
+                        "refined_end_frame": e,
+                        "epoch_signal": signal,
+                        "epoch_index": 0,
+                    }
+                )
+
+    def test_segment_zero_means(self) -> None:
+        """Check a few kinematic metrics for the first segment."""
+        feats = compute_kinematic_features(self.blinks, self.sfreq)
+        logger.debug("Real raw kinematic features: %s", feats)
+        self.assertAlmostEqual(feats["blink_velocity_mean"], 3.90395, places=5)
+        self.assertAlmostEqual(feats["blink_acceleration_mean"], 162.72143, places=5)
+        self.assertAlmostEqual(feats["blink_avr_mean"], 0.0442, places=4)
 
 
 if __name__ == "__main__":
