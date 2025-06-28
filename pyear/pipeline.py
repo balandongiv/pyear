@@ -33,7 +33,12 @@ def extract_features(
     Parameters
     ----------
     blinks : Iterable[Dict[str, int]]
-        Blink annotations with epoch indices and frame positions.
+        Blink annotations for each detected blink. Each record must contain
+        ``epoch_index`` (``int``), ``epoch_signal`` (1D array),
+        ``refined_start_frame`` (``int``), ``refined_peak_frame`` (``int``),
+        and ``refined_end_frame`` (``int``). These fields match the format
+        used throughout the feature modules and specify the blink location
+        relative to its epoch.
     sfreq : float
         Sampling frequency of the recording.
     epoch_len : float
