@@ -31,7 +31,7 @@ def neg_amp_vel_ratio_zero(blink: Dict[str, Any], sfreq: float) -> float:
     Parameters
     ----------
     blink : dict
-        Blink annotation containing ``refined_peak_frame``, ``refined_end_frame``
+        Blink annotation containing ``refined_start_frame``, ``refined_end_frame``
         and ``epoch_signal``.
     sfreq : float
         Sampling frequency in Hertz.
@@ -44,7 +44,6 @@ def neg_amp_vel_ratio_zero(blink: Dict[str, Any], sfreq: float) -> float:
     """
     start = int(blink["refined_start_frame"])
     end = int(blink["refined_end_frame"])
-    peak = int(blink["refined_peak_frame"])
     signal = np.asarray(blink["epoch_signal"], dtype=float)
     segment = signal[start : end + 1]
     baseline = signal[start]
