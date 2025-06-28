@@ -108,7 +108,7 @@ Power spectral and rhythm descriptors:
 ```bash
 git clone [https://github.com/your-username/pyear.git](https://github.com/balandongiv/pyear.git)
 cd pyear
-pip install -r requirements.txt
+pip install .
 ```
 
 ---
@@ -136,9 +136,12 @@ features.head()
 ```
 
 The ``blinks`` list can be built with the provided segmentation helpers
-(see ``unitest/fixtures/mock_ear_generation.py``).  When requesting the
+(see ``unitest/fixtures/mock_ear_generation.py``).  When working with a
+continuous ``mne.Raw`` recording, the new
+``pyear.utils.slice_raw_to_segments`` helper slices the raw file into
+30‑second annotated segments with a progress bar.  When requesting the
 ``blink_interval_dist`` feature, supply ``raw_segments`` as a list of
-the original per-epoch signals.
+the original per‑epoch signals.
 
 ---
 
