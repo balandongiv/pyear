@@ -18,6 +18,7 @@ from .energy_complexity import aggregate_energy_complexity_features
 from .open_eye import aggregate_open_eye_features
 from .ear_metrics import aggregate_ear_features
 from .waveform_features import aggregate_waveform_features
+from .frequency_domain import aggregate_frequency_domain_features
 from .blink_events.classification import aggregate_classification_features
 
 # Configure root logger
@@ -100,6 +101,10 @@ def extract_features(
     if features is None or "open_eye" in features:
         df_open = aggregate_open_eye_features(blinks, sfreq, n_epochs)
         df_events = pd.concat([df_events, df_open], axis=1)
+
+    if features is None or "frequency" in features:
+        df_freq = aggregate_frequency_domain_features(blinks, sfreq, n_epochs)
+        df_events = pd.concat([df_events, df_freq], axis=1)
 
     if features is None or "waveform" in features:
         df_wave = aggregate_waveform_features(blinks, sfreq, n_epochs)
