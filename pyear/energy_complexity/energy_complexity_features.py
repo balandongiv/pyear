@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 import logging
-import numpy as np
 
 from .per_blink import compute_blink_energy_complexity
 from ..morphology.morphology_features import _safe_stats
