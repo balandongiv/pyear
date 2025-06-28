@@ -118,14 +118,27 @@ pip install -r requirements.txt
 ```python
 from pyear.pipeline import extract_features
 
+# "blinks" should be a list of dictionaries with at least
+# ``epoch_index`` and refined frame positions. Each entry typically
+# includes ``refined_start_frame``, ``refined_peak_frame``,
+# ``refined_end_frame`` and the epoch's signal array under
+# ``epoch_signal``.
+
 features = extract_features(
-    eyelid_trace=your_signal_array,
-    sampling_rate=30,
-    epoch_length_sec=30
+    blinks,
+    sfreq=30,
+    epoch_len=30,
+    n_epochs=n_epochs,
+    raw_segments=raw_segments,  # required when using blink_interval_dist
 )
 
 features.head()
 ```
+
+The ``blinks`` list can be built with the provided segmentation helpers
+(see ``unitest/fixtures/mock_ear_generation.py``).  When requesting the
+``blink_interval_dist`` feature, supply ``raw_segments`` as a list of
+the original per-epoch signals.
 
 ---
 
