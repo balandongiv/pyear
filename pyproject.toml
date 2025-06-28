@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyear"
+version = "0.1.0"
+description = "Blink and eyelid aperture feature extraction toolkit"
+authors = [{name = "pyear contributors"}]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "pandas",
+    "mne",
+    "tqdm",
+    "PyWavelets",
+]

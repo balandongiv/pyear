@@ -108,7 +108,7 @@ Power spectral and rhythm descriptors:
 ```bash
 git clone [https://github.com/your-username/pyear.git](https://github.com/balandongiv/pyear.git)
 cd pyear
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ---
@@ -137,6 +137,8 @@ See [docs/FEATURES.md](docs/FEATURES.md) for detailed descriptions and formulas 
 * Frequency bands
 * Complexity measures
 * State modeling strategies
+
+Additional examples can be found in [docs/tutorial.ipynb](docs/tutorial.ipynb).
 
 ---
 

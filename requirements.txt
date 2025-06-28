@@ -1,4 +1,6 @@
 tqdm
 pandas
 mne
+numpy
+PyWavelets
 
