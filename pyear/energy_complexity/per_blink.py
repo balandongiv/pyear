@@ -37,7 +37,7 @@ def compute_blink_energy_complexity(blink: Dict[str, Any], sfreq: float) -> Dict
     segment = signal[start : end + 1]
     dt = 1.0 / sfreq
 
-    energy = float(np.trapz(segment ** 2, dx=dt))
+    energy = float(np.trapezoid(segment ** 2, dx=dt))
 
     if segment.size > 2:
         tkeo = segment[1:-1] ** 2 - segment[:-2] * segment[2:]
@@ -48,7 +48,7 @@ def compute_blink_energy_complexity(blink: Dict[str, Any], sfreq: float) -> Dict
     line_length = float(np.sum(np.abs(np.diff(segment))))
 
     velocity = np.gradient(segment, dt)
-    vel_integral = float(np.trapz(np.abs(velocity), dx=dt))
+    vel_integral = float(np.trapezoid(np.abs(velocity), dx=dt))
 
     logger.debug(
         "Blink energy: energy=%s, teager=%s, line_length=%s, vel_int=%s",
