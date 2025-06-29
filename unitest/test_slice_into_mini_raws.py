@@ -14,9 +14,12 @@ import unittest
 import mne
 import pandas as pd
 
-from ground_truth.epoch_blink_overlay import slice_into_mini_raws
+from pyear.utils.epochs import slice_into_mini_raws
 
 logger = logging.getLogger(__name__)
+
+# Get the project root directory
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestSliceIntoMiniRaws(unittest.TestCase):
@@ -24,7 +27,10 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
 
     def setUp(self) -> None:
         """Run ``slice_into_mini_raws`` once for use in all tests."""
-        raw = mne.io.read_raw_fif("unitest/ear_eog.fif", preload=False, verbose=False)
+        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
+        expected_csv_path = PROJECT_ROOT / "unitest" / "ear_eog_blink_count_epoch.csv"
+
+        raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
         with tempfile.TemporaryDirectory() as tmpdir:
             self.df, _ = slice_into_mini_raws(
                 raw=raw,
@@ -34,7 +40,7 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
                 report=None,
                 blink_label=None,
             )
-        self.expected = pd.read_csv(Path("unitest/ear_eog_blink_count_epoch.csv"))
+        self.expected = pd.read_csv(expected_csv_path)
 
     def test_each_segment(self) -> None:
         """Check blink count for each of the first ten segments individually."""
