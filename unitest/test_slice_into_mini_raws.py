@@ -12,6 +12,8 @@ import unittest
 import mne
 import numpy as np
 
+from unitest.fixtures.mock_raw_generation import generate_mock_raw
+
 from pyear.utils import prepare_refined_segments
 from pyear.utils.epochs import slice_into_mini_raws
 
@@ -25,14 +27,7 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
         self.sfreq = 50.0
         self.epoch_len = 10.0
         self.n_epochs = 3
-        n_samples = int(self.sfreq * self.epoch_len * self.n_epochs)
-        rng = np.random.default_rng(0)
-        data = rng.normal(scale=1e-6, size=(1, n_samples))
-        info = mne.create_info(["EOG"], self.sfreq, ["misc"])
-        raw = mne.io.RawArray(data, info, verbose=False)
-        onsets = np.array([2.0, 5.0, 12.0, 18.0, 22.0])
-        durations = np.repeat(0.1, len(onsets))
-        raw.set_annotations(mne.Annotations(onsets, durations, ["blink"] * len(onsets)))
+        raw = generate_mock_raw(self.sfreq, self.epoch_len, self.n_epochs)
 
         self.tmp_dir = tempfile.TemporaryDirectory()
         self.out_dir = Path(self.tmp_dir.name)
