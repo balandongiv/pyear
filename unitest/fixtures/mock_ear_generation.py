@@ -1,5 +1,6 @@
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
+import matplotlib.pyplot as plt
 import mne
 import numpy as np
 
@@ -73,11 +74,11 @@ def _refine_ear(
         sfreq: float
 ) -> List[Dict[str, Any]]:
     """Refines blink annotations for each epoch by locating precise start, peak, and end frames
-    using ear‐sensor signal extrema and thresholds.
+    using ear
 
     Args:
         epochs (mne.Epochs):
-            An MNE Epochs object containing the segmented ear‐sensor data.
+            An MNE Epochs object containing the segmented ear
         annotations (List[Dict[str, int]]):
             A list of original blink annotations. Each dict must have:
               - 'id': unique blink identifier
@@ -85,12 +86,12 @@ def _refine_ear(
               - 'trough': absolute peak/trough sample index in the full signal
               - 'end': absolute end sample index in the full signal
         sfreq (float):
-            Sampling frequency in Hz. Used to convert time‐based parameters into frames.
+            Sampling frequency in Hz. Used to convert time
 
     Returns:
         List[Dict[str, Any]]:
             A list of refined blink entries. Each dict contains:
-              - 'epoch_index' (int): 0‐based index of the epoch containing the blink
+              - 'epoch_index' (int): 0
               - 'epoch_signal' (np.ndarray): 1D signal array for that epoch
               - 'original_annotation' (Dict[str, int]): the original annotation dict
               - 'refined_start_frame' (int): refined start frame index *within* the epoch
@@ -160,6 +161,68 @@ def _generate_refined_ear() -> Tuple[List, float, float, int]:
     return refined, sfreq, epoch_len, n_epochs
 
 
+def plot_refined_blinks(
+    refined_blinks: List[Dict[str, Any]],
+    sfreq: float,
+    epoch_len: float,
+    epoch_indices: Optional[List[int]] = None
+) -> None:
+    """
+    Plots the EAR signal for one or more epochs and overlays the refined blink markers.
+
+    Args:
+        refined_blinks (List[Dict[str, Any]]): The list of refined blink data.
+        sfreq (float): The sampling frequency.
+        epoch_len (float): The length of each epoch in seconds.
+        epoch_indices (Optional[List[int]]): A list of specific epoch indices to plot.
+                                             If None, all epochs with blinks are plotted.
+    """
+    # Group blinks by epoch index
+    epochs_to_plot = {}
+    for blink in refined_blinks:
+        idx = blink['epoch_index']
+        if epoch_indices is None or idx in epoch_indices:
+            if idx not in epochs_to_plot:
+                epochs_to_plot[idx] = {
+                    'signal': blink['epoch_signal'],
+                    'blinks': []
+                }
+            epochs_to_plot[idx]['blinks'].append(blink)
+
+    if not epochs_to_plot:
+        print("No epochs to plot.")
+        return
+
+    n_epochs_to_plot = len(epochs_to_plot)
+    fig, axes = plt.subplots(n_epochs_to_plot, 1, figsize=(15, 5 * n_epochs_to_plot), squeeze=False)
+    time_axis = np.arange(0, epoch_len, 1.0 / sfreq)
+
+    for i, (epoch_index, data) in enumerate(epochs_to_plot.items()):
+        ax = axes[i, 0]
+        ax.plot(time_axis, data['signal'], label='EAR Signal')
+
+        for blink in data['blinks']:
+            start_t = blink['refined_start_frame'] / sfreq
+            peak_t = blink['refined_peak_frame'] / sfreq
+            end_t = blink['refined_end_frame'] / sfreq
+
+            ax.axvline(x=start_t, color='g', linestyle='--', label=f'Blink {blink["original_annotation"]["id"]} Start')
+            ax.axvline(x=peak_t, color='r', linestyle='-', label=f'Blink {blink["original_annotation"]["id"]} Peak')
+            ax.axvline(x=end_t, color='b', linestyle='--', label=f'Blink {blink["original_annotation"]["id"]} End')
+
+        ax.set_title(f'Epoch {epoch_index}')
+        ax.set_xlabel('Time (s)')
+        ax.set_ylabel('EAR')
+        # Avoid duplicate labels in legend
+        handles, labels = ax.get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        ax.legend(by_label.values(), by_label.keys())
+        ax.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
     refined_blinks, sfreq, epoch_len, n_epochs = _generate_refined_ear()
     print(f"Generated {len(refined_blinks)} refined blinks (sfreq={sfreq}, epoch_len={epoch_len}, n_epochs={n_epochs})")
@@ -168,3 +231,16 @@ if __name__ == "__main__":
         # Exclude the signal for printing
         blink_info = {k: v for k, v in blink.items() if k != 'epoch_signal'}
         print(blink_info)
+    
+    # Plot a single epoch (e.g., epoch 0)
+    print("\nPlotting single epoch...")
+    plot_refined_blinks(refined_blinks, sfreq, epoch_len, epoch_indices=[0])
+
+    # Plot multiple specific epochs (e.g., epochs 1 and 4)
+    print("\nPlotting multiple epochs...")
+    plot_refined_blinks(refined_blinks, sfreq, epoch_len, epoch_indices=[1, 4])
+
+    # Plot all epochs that contain blinks
+    print("\nPlotting all epochs with blinks...")
+    plot_refined_blinks(refined_blinks, sfreq, epoch_len)
+

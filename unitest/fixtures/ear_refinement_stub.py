@@ -20,7 +20,9 @@ def refine_ear_extrema_and_threshold_stub(
     search_expansion_frames: int = 5,
     value_threshold: float | None = None,
 ) -> Tuple[int, int, int]:
-    """Return a crude blink refinement.
+    """Return a crude ear refinement.
+    currently the logic below is for trough refinement only.The trough is lowest point in the eye aspect ratio segment between the
+    start and end relative indices. If ``peak_rel_cvat`` is provided, it is used
 
     Parameters mirror those of the real refinement routine but the
     implementation merely validates that indices are within bounds and
