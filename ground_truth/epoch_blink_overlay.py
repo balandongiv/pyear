@@ -15,6 +15,8 @@ def summarize_blink_counts(
     epoch_len: float = 30.0,
     blink_label: Optional[str] = None,
 ) -> Tuple[pd.DataFrame, list[mne.io.BaseRaw]]:
-    """Return blink counts per epoch using pyear utilities."""
-    epochs, df, _, _ = slice_raw_into_epochs(raw, epoch_len=epoch_len, blink_label=blink_label)
-    return df, epochs
+    """Return blink counts per segment using pyear utilities."""
+    segments, df, _, _ = slice_raw_into_epochs(
+        raw, epoch_len=epoch_len, blink_label=blink_label
+    )
+    return df, segments

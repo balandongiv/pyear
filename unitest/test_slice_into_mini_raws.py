@@ -35,7 +35,7 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
         self.tmp_dir = tempfile.TemporaryDirectory()
         self.out_dir = Path(self.tmp_dir.name)
         (
-            self.epochs,
+            self.segments,
             self.df,
             _,
             _,
@@ -48,7 +48,7 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
             overwrite=True,
             report=False,
         )
-        self.saved_epochs = [
+        self.saved_segments = [
             mne.io.read_raw_fif(p, preload=True, verbose=False)
             for p in sorted(self.out_dir.glob("epoch_*_raw.fif"))
         ]
@@ -65,9 +65,9 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
         return int(mask.sum())
 
     def test_saved_equals_memory(self) -> None:
-        """Saved epochs should be identical to in-memory epochs."""
-        self.assertEqual(len(self.epochs), len(self.saved_epochs))
-        for mem, disk in zip(self.epochs, self.saved_epochs):
+        """Saved segments should be identical to in-memory segments."""
+        self.assertEqual(len(self.segments), len(self.saved_segments))
+        for mem, disk in zip(self.segments, self.saved_segments):
             np.testing.assert_allclose(mem.get_data(), disk.get_data())
             np.testing.assert_array_equal(mem.annotations.onset, disk.annotations.onset)
             self.assertListEqual(
@@ -76,12 +76,12 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
             )
 
     def test_blink_counts(self) -> None:
-        """Blink counts match expectation for each epoch."""
-        for idx, raw in enumerate(self.epochs):
+        """Blink counts match expectation for each segment."""
+        for idx, raw in enumerate(self.segments):
             count = self._count_blinks(raw)
             self.assertEqual(count, self.expected_counts[idx])
             self.assertEqual(count, int(self.df.loc[idx, "blink_count"]))
-        for idx, raw in enumerate(self.saved_epochs):
+        for idx, raw in enumerate(self.saved_segments):
             count = self._count_blinks(raw)
             self.assertEqual(count, self.expected_counts[idx])
 

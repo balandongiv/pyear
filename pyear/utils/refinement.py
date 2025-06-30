@@ -147,7 +147,7 @@ def plot_refined_blinks(
 
 
 def refine_blinks_from_epochs(
-    epochs: Sequence[mne.io.BaseRaw],
+    segments: Sequence[mne.io.BaseRaw],
     channel: str,
     *,
     refine_func: Callable[[np.ndarray, int, int, int | None], Tuple[int, int, int]] = refine_local_maximum_stub,
@@ -155,12 +155,12 @@ def refine_blinks_from_epochs(
     search_expansion_frames: int | None = None,
     value_threshold: float | None = None,
 ) -> List[Dict[str, Any]]:
-    """Refine blink annotations within pre-sliced epochs.
+    """Refine blink annotations within pre-sliced raw segments.
 
     Parameters
     ----------
-    epochs : sequence of mne.io.BaseRaw
-        Epochs produced by :func:`slice_into_mini_raws` containing annotations.
+    segments : sequence of mne.io.BaseRaw
+        Segments produced by :func:`slice_into_mini_raws` containing annotations.
     channel : str
         Channel name used for refinement.
     refine_func : callable, optional
@@ -182,15 +182,15 @@ def refine_blinks_from_epochs(
         ``epoch_signal``, ``refined_start_frame``, ``refined_peak_frame`` and
         ``refined_end_frame``.
     """
-    logger.info("Refining blinks across %d epochs", len(epochs))
+    logger.info("Refining blinks across %d segments", len(segments))
     refined: List[Dict[str, Any]] = []
-    if not epochs:
+    if not segments:
         return refined
-    sfreq = epochs[0].info["sfreq"]
+    sfreq = segments[0].info["sfreq"]
     if search_expansion_frames is None:
         search_expansion_frames = int(0.1 * sfreq)
 
-    for epoch_index, raw in enumerate(epochs):
+    for epoch_index, raw in enumerate(segments):
         signal = raw.get_data(picks=channel)[0]
         for ann in raw.annotations:
             start_frame = int(round(float(ann["onset"]) * sfreq))
