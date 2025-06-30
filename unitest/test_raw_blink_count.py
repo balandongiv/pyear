@@ -39,19 +39,25 @@ class TestRawBlinkCount(unittest.TestCase):
         )
         self.expected = pd.read_csv(expected_csv_path)
 
-        # refine blink start and end frames for each epoch
+        # refine blink start/end frames and update segment annotations
         self.channel = "EOG-EEG-eog_vert_left"
         self.refined = refine_blinks_from_epochs(self.segments, self.channel)
+
         idx = 0
         for seg in self.segments:
             sfreq = seg.info["sfreq"]
+            new_onsets = []
+            new_durs = []
+            new_desc = []
             for ann_i in range(len(seg.annotations)):
                 blink = self.refined[idx]
-                seg.annotations.onset[ann_i] = blink["refined_start_frame"] / sfreq
-                seg.annotations.duration[ann_i] = (
-                    blink["refined_end_frame"] - blink["refined_start_frame"]
-                ) / sfreq
+                new_onsets.append(blink["refined_start_frame"] / sfreq)
+                new_durs.append(
+                    (blink["refined_end_frame"] - blink["refined_start_frame"]) / sfreq
+                )
+                new_desc.append(seg.annotations.description[ann_i])
                 idx += 1
+            seg.set_annotations(mne.Annotations(new_onsets, new_durs, new_desc))
 
         # create sanity check plots for selected epochs without displaying them
         self.plots = plot_refined_blinks(
