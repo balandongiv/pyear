@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 
 from pyear.utils.epochs import slice_into_mini_raws
+from pyear.utils.refinement import refine_blinks_from_epochs, plot_refined_blinks
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,29 @@ class TestRawBlinkCount(unittest.TestCase):
             report=False,
         )
         self.expected = pd.read_csv(expected_csv_path)
+
+        # refine blink start and end frames for each epoch
+        self.channel = "EOG-EEG-eog_vert_left"
+        self.refined = refine_blinks_from_epochs(self.segments, self.channel)
+        idx = 0
+        for seg in self.segments:
+            sfreq = seg.info["sfreq"]
+            for ann_i in range(len(seg.annotations)):
+                blink = self.refined[idx]
+                seg.annotations.onset[ann_i] = blink["refined_start_frame"] / sfreq
+                seg.annotations.duration[ann_i] = (
+                    blink["refined_end_frame"] - blink["refined_start_frame"]
+                ) / sfreq
+                idx += 1
+
+        # create sanity check plots for selected epochs without displaying them
+        self.plots = plot_refined_blinks(
+            self.refined,
+            self.segments[0].info["sfreq"],
+            30.0,
+            epoch_indices=[0, 13, 49],
+            show=False,
+        )
 
     @staticmethod
     def _count_blinks(raw: mne.io.BaseRaw, label: str | None = "blink") -> int:
