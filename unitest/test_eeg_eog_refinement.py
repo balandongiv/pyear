@@ -1,0 +1,71 @@
+"""Tests for blink refinement on EEG and EOG channels."""
+import logging
+import tempfile
+from pathlib import Path
+import unittest
+
+import mne
+
+from pyear.utils.epochs import slice_into_mini_raws
+from pyear.utils.refinement import refine_blinks_from_epochs, plot_refined_blinks
+
+logger = logging.getLogger(__name__)
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+class TestEEGEOGRefinement(unittest.TestCase):
+    """Ensure refinement works on both EEG and EOG modalities."""
+
+    def setUp(self) -> None:
+        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
+        raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
+        (
+            self.epochs,
+            self.df,
+            _,
+            _,
+        ) = slice_into_mini_raws(
+            raw,
+            Path(tempfile.mkdtemp()),
+            epoch_len=30.0,
+            blink_label=None,
+            save=False,
+            overwrite=False,
+            report=False,
+        )
+        self.total_ann = sum(len(ep.annotations) for ep in self.epochs)
+
+    def _run_channel(self, channel: str) -> None:
+        logger.info("Refinement test on %s", channel)
+        refined = refine_blinks_from_epochs(self.epochs, channel)
+        self.assertEqual(len(refined), self.total_ann)
+        for blink in refined:
+            n_times = len(blink["epoch_signal"])
+            self.assertTrue(0 <= blink["refined_start_frame"] <= n_times)
+            self.assertTrue(0 <= blink["refined_peak_frame"] <= n_times)
+            self.assertTrue(0 <= blink["refined_end_frame"] <= n_times)
+            self.assertLessEqual(blink["refined_start_frame"], blink["refined_peak_frame"])
+            self.assertLessEqual(blink["refined_peak_frame"], blink["refined_end_frame"])
+        # sanity plot for first epoch without showing
+        figs = plot_refined_blinks(
+            refined,
+            self.epochs[0].info["sfreq"],
+            30.0,
+            epoch_indices=[0],
+            show=False,
+        )
+        self.assertTrue(len(figs) >= 1)
+
+    def test_eeg_e8(self) -> None:
+        """Run refinement on EEG channel."""
+        self._run_channel("EEG-E8")
+
+    def test_eog_vertical(self) -> None:
+        """Run refinement on EOG channel."""
+        self._run_channel("EOG-EEG-eog_vert_left")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    unittest.main()

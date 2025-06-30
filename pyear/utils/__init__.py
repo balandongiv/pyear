@@ -6,6 +6,12 @@ from .epochs import (
     generate_epoch_report,
     slice_into_mini_raws,
 )
+from .refinement import (
+    refine_ear_extrema_and_threshold_stub,
+    refine_local_maximum_stub,
+    refine_blinks_from_epochs,
+    plot_refined_blinks,
+)
 
 __all__ = [
     "slice_raw_to_segments",
@@ -13,4 +19,8 @@ __all__ = [
     "save_epoch_raws",
     "generate_epoch_report",
     "slice_into_mini_raws",
+    "refine_ear_extrema_and_threshold_stub",
+    "refine_local_maximum_stub",
+    "refine_blinks_from_epochs",
+    "plot_refined_blinks",
 ]
