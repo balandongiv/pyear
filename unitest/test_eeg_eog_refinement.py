@@ -1,4 +1,5 @@
-"""Tests for blink refinement on EEG and EOG channels."""
+"""Tests for blink refinement on EEG and EOG channels.
+Here we want to improve the start, peak, and end frames of detected blinks (eeg and eog) based on the signal in the epochs."""
 import logging
 import tempfile
 from pathlib import Path
@@ -53,7 +54,7 @@ class TestEEGEOGRefinement(unittest.TestCase):
             self.segments[0].info["sfreq"],
             30.0,
             epoch_indices=[0],
-            show=False,
+            show=True,
         )
         self.assertTrue(len(figs) >= 1)
 
