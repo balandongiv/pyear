@@ -12,6 +12,7 @@ from .refinement import (
     refine_blinks_from_epochs,
     plot_refined_blinks,
 )
+from .raw_preprocessing import prepare_refined_segments
 
 __all__ = [
     "slice_raw_to_segments",
@@ -23,4 +24,5 @@ __all__ = [
     "refine_local_maximum_stub",
     "refine_blinks_from_epochs",
     "plot_refined_blinks",
+    "prepare_refined_segments",
 ]

@@ -31,6 +31,8 @@ from tqdm import tqdm
 
 from pyear.utils.epochs import slice_into_mini_raws
 from pyear.utils.refinement import refine_blinks_from_epochs, plot_refined_blinks
+from pyear.utils import prepare_refined_segments
+from pyear.blink_events.event_features.blink_count import blink_count_epoch
 
 logger = logging.getLogger(__name__)
 
@@ -108,12 +110,12 @@ class TestRawBlinkCount(unittest.TestCase):
         """
         logger.info("Entering TestRawBlinkCount.setUp")
 
-        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
-        expected_csv = PROJECT_ROOT / "unitest" / "ear_eog_blink_count_epoch.csv"
+        self.raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
+        self.expected_csv = PROJECT_ROOT / "unitest" / "ear_eog_blink_count_epoch.csv"
 
         # load raw data without preloading
-        raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
-        logger.debug("Loaded raw file: %s", raw_path)
+        raw = mne.io.read_raw_fif(self.raw_path, preload=False, verbose=False)
+        logger.debug("Loaded raw file: %s", self.raw_path)
 
         # slice into 30s mini-raw segments
         (
@@ -133,8 +135,8 @@ class TestRawBlinkCount(unittest.TestCase):
         logger.debug("Sliced into %d segments", len(self.segments))
 
         # load expected blink counts
-        self.expected = pd.read_csv(expected_csv)
-        logger.debug("Loaded expected CSV: %s", expected_csv)
+        self.expected = pd.read_csv(self.expected_csv)
+        logger.debug("Loaded expected CSV: %s", self.expected_csv)
 
         # refine blink start/end frames
         self.channel = "EOG-EEG-eog_vert_left"
@@ -191,6 +193,21 @@ class TestRawBlinkCount(unittest.TestCase):
             self.assertEqual(count, df_count)
             self.assertEqual(count, csv_count)
         logger.info("Exiting TestRawBlinkCount.test_total_blink_count")
+
+    def test_segments_and_counts(self) -> None:
+        """Segments should yield expected blink counts after refinement."""
+        segments, refined = prepare_refined_segments(
+            self.raw_path,
+            "EOG-EEG-eog_vert_left",
+        )
+        expected = pd.read_csv(self.expected_csv)
+        checks = {0: 2, 13: 4, 49: 13}
+        for idx, expected_count in checks.items():
+            count = blink_count_epoch(segments[idx], label=None)
+            df_count = int(expected.loc[idx, "blink_count"])
+            self.assertEqual(count, expected_count)
+            self.assertEqual(count, df_count)
+        self.assertNotIn("epoch_signal", refined[0])
 
 
 if __name__ == "__main__":
