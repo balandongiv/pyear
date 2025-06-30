@@ -1,59 +1,89 @@
-"""Blink count validation for raw segmentation.
+"""Integration tests for ``slice_into_mini_raws``.
 
-This test ensures that ``slice_into_mini_raws`` correctly counts blinks in
-30-second segments of the ``ear_eog.fif`` recording.  The expected blink counts
-for the first ten segments are stored in
-``ear_eog_blink_count_epoch.csv``.
+This test creates a synthetic raw recording with blink annotations, slices it
+into epochs, saves them to disk and verifies that the saved files match the
+in-memory epochs. Blink counts per epoch are also validated.
 """
-
 import logging
 import tempfile
 from pathlib import Path
 import unittest
 
 import mne
-import pandas as pd
+import numpy as np
 
 from pyear.utils.epochs import slice_into_mini_raws
 
 logger = logging.getLogger(__name__)
 
-# Get the project root directory
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
 
 class TestSliceIntoMiniRaws(unittest.TestCase):
-    """Verify blink counts from 30-second raw segments."""
+    """Validate slicing and saving of raw epochs."""
 
     def setUp(self) -> None:
-        """Run ``slice_into_mini_raws`` once for use in all tests."""
-        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
-        expected_csv_path = PROJECT_ROOT / "unitest" / "ear_eog_blink_count_epoch.csv"
+        self.sfreq = 50.0
+        self.epoch_len = 10.0
+        self.n_epochs = 3
+        n_samples = int(self.sfreq * self.epoch_len * self.n_epochs)
+        rng = np.random.default_rng(0)
+        data = rng.normal(scale=1e-6, size=(1, n_samples))
+        info = mne.create_info(["EOG"], self.sfreq, ["misc"])
+        raw = mne.io.RawArray(data, info, verbose=False)
+        onsets = np.array([2.0, 5.0, 12.0, 18.0, 22.0])
+        durations = np.repeat(0.1, len(onsets))
+        raw.set_annotations(mne.Annotations(onsets, durations, ["blink"] * len(onsets)))
+        self.tmp_dir = tempfile.TemporaryDirectory()
+        self.out_dir = Path(self.tmp_dir.name)
+        (
+            self.epochs,
+            self.df,
+            _,
+            _,
+        ) = slice_into_mini_raws(
+            raw,
+            self.out_dir,
+            epoch_len=self.epoch_len,
+            blink_label="blink",
+            save=True,
+            overwrite=True,
+            report=False,
+        )
+        self.saved_epochs = [
+            mne.io.read_raw_fif(p, preload=True, verbose=False)
+            for p in sorted(self.out_dir.glob("epoch_*_raw.fif"))
+        ]
+        self.expected_counts = [2, 2, 1]
 
-        raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            self.df, _ = slice_into_mini_raws(
-                raw=raw,
-                out_dir=Path(tmpdir),
-                epoch_len=30.0,
-                save=False,
-                report=None,
-                blink_label=None,
+    def tearDown(self) -> None:
+        self.tmp_dir.cleanup()
+
+    @staticmethod
+    def _count_blinks(raw: mne.io.BaseRaw, label: str = "blink") -> int:
+        mask = np.ones(len(raw.annotations), dtype=bool)
+        if label is not None:
+            mask &= raw.annotations.description == label
+        return int(mask.sum())
+
+    def test_saved_equals_memory(self) -> None:
+        """Saved epochs should be identical to in-memory epochs."""
+        self.assertEqual(len(self.epochs), len(self.saved_epochs))
+        for mem, disk in zip(self.epochs, self.saved_epochs):
+            np.testing.assert_allclose(mem.get_data(), disk.get_data())
+            np.testing.assert_array_equal(mem.annotations.onset, disk.annotations.onset)
+            self.assertListEqual(
+                list(mem.annotations.description),
+                list(disk.annotations.description),
             )
-        self.expected = pd.read_csv(expected_csv_path)
 
-    def test_each_segment(self) -> None:
-        """Check blink count for each of the first ten segments individually."""
-        for idx, expected_count in enumerate(self.expected["blink_count"]):
-            with self.subTest(segment=idx):
-                result = int(self.df.loc[idx, "blink_count"])
-                self.assertEqual(result, expected_count)
-
-    def test_total_blink_count(self) -> None:
-        """Total blink count across the first ten segments should match."""
-        result_total = int(self.df.loc[: len(self.expected) - 1, "blink_count"].sum())
-        expected_total = int(self.expected["blink_count"].sum())
-        self.assertEqual(result_total, expected_total)
+    def test_blink_counts(self) -> None:
+        """Blink counts match expectation for each epoch."""
+        for idx, raw in enumerate(self.epochs):
+            count = self._count_blinks(raw)
+            self.assertEqual(count, self.expected_counts[idx])
+            self.assertEqual(count, int(self.df.loc[idx, "blink_count"]))
+        for idx, raw in enumerate(self.saved_epochs):
+            count = self._count_blinks(raw)
+            self.assertEqual(count, self.expected_counts[idx])
 
 
 if __name__ == "__main__":

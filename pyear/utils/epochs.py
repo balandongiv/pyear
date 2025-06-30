@@ -1,7 +1,9 @@
 """Epoching utilities for time-series data."""
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import mne
@@ -24,40 +26,37 @@ logger = logging.getLogger(__name__)
 # Core utility functions
 # -----------------------------------------------------------------------------
 
-def slice_into_mini_raws(
-        raw: mne.io.BaseRaw,
-        out_dir: Path,
-        epoch_len: float = EPOCH_LEN,
-        save: bool = True,
-        report: Optional[mne.Report] = None,
-        blink_label: Optional[str] = BLINK_LABEL,
-) -> Tuple[pd.DataFrame, List[Tuple[int, int]]]:
-    """Slice a raw recording into epochs and count blinks.
+def slice_raw_into_epochs(
+    raw: mne.io.BaseRaw,
+    *,
+    epoch_len: float = EPOCH_LEN,
+    blink_label: Optional[str] = BLINK_LABEL,
+) -> Tuple[List[mne.io.BaseRaw], pd.DataFrame, List[Tuple[int, int]], List[Tuple[float, float]]]:
+    """Slice a raw recording into epochs and count blink annotations.
 
     Parameters
     ----------
     raw : mne.io.BaseRaw
         Continuous recording with blink annotations.
-    out_dir : Path
-        Directory to save epoch files, if enabled.
-    epoch_len : float
-        Length of each epoch in seconds.
-    save : bool
-        Whether to write each epoch raw file to disk.
-    report : mne.Report | None
-        Report object to which figures will be added.
-    blink_label : str | None
-        Description label to filter blink annotations.
+    epoch_len : float, optional
+        Length of each epoch in seconds. Defaults to :data:`EPOCH_LEN`.
+    blink_label : str | None, optional
+        Annotation label to filter blinks. ``None`` counts all annotations.
 
     Returns
     -------
-    df : pandas.DataFrame
-        Epoch blink counts (columns: "epoch_id", "blink_count").
-    boundary_pairs : list of tuple
-        Pairs of epoch indices where a blink spans a boundary.
+    list of mne.io.BaseRaw
+        Epochs cropped from the input raw with annotations shifted relative to
+        each epoch.
+    pandas.DataFrame
+        Blink counts per epoch with columns ``epoch_id`` and ``blink_count``.
+    list of tuple
+        Pairs of epoch indices where a blink spans the boundary between epochs.
+    list of tuple
+        Start and stop times for each epoch (seconds) relative to the original
+        raw.
     """
-    logger.info("Entering slice_into_mini_raws")
-    out_dir.mkdir(parents=True, exist_ok=True)
+    logger.info("Slicing raw into epochs (%.1fs)", epoch_len)
 
     ann = raw.annotations
     mask = np.ones(len(ann), dtype=bool)
@@ -68,12 +67,15 @@ def slice_into_mini_raws(
 
     total_time = raw.times[-1]
     n_epochs = int(np.ceil(total_time / epoch_len))
-    counts = [0] * n_epochs
+    counts: List[int] = [0] * n_epochs
     boundary_pairs: List[Tuple[int, int]] = []
+    epochs: List[mne.io.BaseRaw] = []
+    times: List[Tuple[float, float]] = []
 
     for i in tqdm(range(n_epochs), desc="Cropping epochs", unit="epoch"):
         start = i * epoch_len
         stop = min(start + epoch_len, total_time)
+        times.append((start, stop))
 
         in_epoch = (onsets >= start) & (onsets < stop)
         counts[i] = int(np.sum(in_epoch))
@@ -90,22 +92,126 @@ def slice_into_mini_raws(
             description=ann_epoch.description,
         )
         mini.set_annotations(shifted)
-        # mini.plot()
-        fig = mini.plot(
-            n_channels=min(10, len(mini.ch_names)),
-            scalings="auto",
-            title=f"Epoch {i} ({start:.2f}-{stop:.2f}s)",
-            show=False,
-        )
-        if report is not None:
-            report.add_figure(fig, title=f"Epoch {i}", section="epochs")
-        if save:
-            fname = out_dir / f"epoch_{i:04d}_{start:07.2f}s-{stop:07.2f}s_raw.fif"
-            mini.save(fname, overwrite=True)
-        plt.close(fig)
+        epochs.append(mini)
 
     df = pd.DataFrame({"epoch_id": range(n_epochs), "blink_count": counts})
     logger.debug("Blink counts per epoch: %s", counts)
     logger.debug("Cross-boundary pairs: %s", boundary_pairs)
+    return epochs, df, boundary_pairs, times
+
+def save_epoch_raws(
+    epochs: Sequence[mne.io.BaseRaw],
+    times: Sequence[Tuple[float, float]],
+    out_dir: Path,
+    *,
+    overwrite: bool = False,
+) -> None:
+    """Save cropped raw epochs to disk.
+
+    Parameters
+    ----------
+    epochs : sequence of mne.io.BaseRaw
+        Epochs returned by :func:`slice_raw_into_epochs`.
+    times : sequence of tuple
+        Start and stop time pairs for file naming.
+    out_dir : pathlib.Path
+        Directory to write the files.
+    overwrite : bool, optional
+        Whether to overwrite existing files. Defaults to ``False``.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for idx, (epoch, span) in enumerate(zip(epochs, times)):
+        start, stop = span
+        fname = out_dir / f"epoch_{idx:04d}_{start:07.2f}s-{stop:07.2f}s_raw.fif"
+        if fname.exists() and not overwrite:
+            logger.debug("Skipping existing %s", fname)
+            continue
+        epoch.save(fname, overwrite=overwrite)
+
+
+def generate_epoch_report(
+    epochs: Sequence[mne.io.BaseRaw],
+    times: Sequence[Tuple[float, float]],
+) -> mne.Report:
+    """Create a simple report visualizing each epoch.
+
+    Parameters
+    ----------
+    epochs : sequence of mne.io.BaseRaw
+        Epoch data to plot.
+    times : sequence of tuple
+        Start and stop time pairs for titles.
+
+    Returns
+    -------
+    mne.Report
+        Report containing one figure per epoch.
+    """
+    report = mne.Report(title="Epoch Overview")
+    for idx, (epoch, span) in enumerate(zip(epochs, times)):
+        start, stop = span
+        fig = epoch.plot(
+            n_channels=min(10, len(epoch.ch_names)),
+            scalings="auto",
+            title=f"Epoch {idx} ({start:.2f}-{stop:.2f}s)",
+            show=False,
+        )
+        report.add_figure(fig, title=f"Epoch {idx}", section="epochs")
+        plt.close(fig)
+    return report
+
+def slice_into_mini_raws(
+    raw: mne.io.BaseRaw,
+    out_dir: Path,
+    *,
+    epoch_len: float = EPOCH_LEN,
+    blink_label: Optional[str] = BLINK_LABEL,
+    save: bool = True,
+    overwrite: bool = False,
+    report: bool = False,
+) -> Tuple[List[mne.io.BaseRaw], pd.DataFrame, List[Tuple[int, int]], Optional[mne.Report]]:
+    """Slice a raw recording into epochs with optional saving and reporting.
+
+    Parameters
+    ----------
+    raw : mne.io.BaseRaw
+        Continuous recording with blink annotations.
+    out_dir : Path
+        Directory to save epoch files and/or report.
+    epoch_len : float, optional
+        Length of each epoch in seconds. Defaults to :data:`EPOCH_LEN`.
+    blink_label : str | None, optional
+        Annotation label used to filter blinks. ``None`` counts all
+        annotations.
+    save : bool, optional
+        Whether to write epoch files to ``out_dir``. Defaults to ``True``.
+    overwrite : bool, optional
+        Overwrite any existing files when ``save`` is ``True``. Defaults to
+        ``False``.
+    report : bool, optional
+        Generate and optionally save an ``mne.Report`` to ``out_dir``. The
+        report is only produced when both ``report`` and ``save`` are ``True``.
+
+    Returns
+    -------
+    list of mne.io.BaseRaw
+        Epoch objects retained in memory.
+    pandas.DataFrame
+        Blink counts per epoch.
+    list of tuple
+        Boundary pairs spanning adjacent epochs.
+    mne.Report | None
+        The generated report if requested, otherwise ``None``.
+    """
+    logger.info("Entering slice_into_mini_raws")
+    epochs, df, boundary_pairs, times = slice_raw_into_epochs(
+        raw, epoch_len=epoch_len, blink_label=blink_label
+    )
+    rep: Optional[mne.Report] = None
+    if save:
+        save_epoch_raws(epochs, times, out_dir, overwrite=overwrite)
+        if report:
+            rep = generate_epoch_report(epochs, times)
+            rep.save(out_dir / "epoch_report.html", overwrite=overwrite, open_browser=False)
     logger.info("Exiting slice_into_mini_raws")
-    return df, boundary_pairs
+    return epochs, df, boundary_pairs, rep
