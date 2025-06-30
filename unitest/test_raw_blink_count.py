@@ -40,10 +40,8 @@ class TestRawBlinkCount(unittest.TestCase):
 
     @staticmethod
     def _count_blinks(raw: mne.io.BaseRaw, label: str | None = "blink") -> int:
-        mask = np.ones(len(raw.annotations), dtype=bool)
-        if label is not None:
-            mask &= raw.annotations.description == label
-        return int(mask.sum())
+        from pyear.blink_events.event_features.blink_count import blink_count_epoch
+        return blink_count_epoch(raw, label=label)
 
     def test_total_blink_count(self) -> None:
         """Validate blink counts for selected raw indices."""
