@@ -9,12 +9,16 @@ segments.
 import unittest
 import math
 import logging
+from pathlib import Path
 import mne
 
 from pyear.energy_complexity.energy_complexity_features import compute_energy_complexity_features
 from unitest.fixtures.mock_ear_generation import _generate_refined_ear
 
 logger = logging.getLogger(__name__)
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestEnergyComplexityFeatures(unittest.TestCase):
@@ -47,7 +51,8 @@ class TestEnergyComplexityRealRaw(unittest.TestCase):
     """Validate energy metrics using a real 30s raw segment."""
 
     def setUp(self) -> None:
-        raw = mne.io.read_raw_fif("unitest/ear_eog.fif", preload=True, verbose=False)
+        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
+        raw = mne.io.read_raw_fif(raw_path, preload=True, verbose=False)
         self.sfreq = raw.info["sfreq"]
         start, stop = 0.0, 30.0
         self.signal = raw.get_data(picks="EAR-avg_ear", start=int(start * self.sfreq), stop=int(stop * self.sfreq))[0]

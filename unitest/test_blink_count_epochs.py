@@ -6,6 +6,7 @@ file and converted to a :class:`pandas.DataFrame` before processing.
 """
 import unittest
 import logging
+from pathlib import Path
 import pandas as pd
 import mne
 
@@ -15,11 +16,15 @@ from ground_truth.epoch_blink_overlay import summarize_blink_counts
 logger = logging.getLogger(__name__)
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
 class TestBlinkCountEpochs(unittest.TestCase):
     """Verify epoch blink counts match the reference implementation."""
 
     def setUp(self) -> None:
-        raw = mne.io.read_raw_fif("unitest/ear_eog.fif", preload=False, verbose=False)
+        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
+        raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
         events = mne.make_fixed_length_events(raw, id=1, duration=30.0)
         self.epochs = mne.Epochs(
             raw,

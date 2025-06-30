@@ -7,6 +7,7 @@ validate the aggregation functions on actual data.
 import unittest
 import math
 import logging
+from pathlib import Path
 import mne
 
 from pyear.waveform_features import (
@@ -18,6 +19,9 @@ from pyear.waveform_features import (
 from unitest.fixtures.mock_ear_generation import _generate_refined_ear
 
 logger = logging.getLogger(__name__)
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestWaveformFeatures(unittest.TestCase):
@@ -52,7 +56,8 @@ class TestWaveformRealRaw(unittest.TestCase):
     """Validate waveform aggregation on a real raw segment."""
 
     def setUp(self) -> None:
-        raw = mne.io.read_raw_fif("unitest/ear_eog.fif", preload=True, verbose=False)
+        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
+        raw = mne.io.read_raw_fif(raw_path, preload=True, verbose=False)
         self.sfreq = raw.info["sfreq"]
         start, stop = 0.0, 30.0
         self.signal = raw.get_data(picks="EAR-avg_ear", start=int(start * self.sfreq), stop=int(stop * self.sfreq))[0]

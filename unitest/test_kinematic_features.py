@@ -7,12 +7,16 @@ Synthetic blink waveforms are produced with ``mock_ear_generation`` for
 import unittest
 import math
 import logging
+from pathlib import Path
 import mne
 
 from pyear.kinematics.kinematic_features import compute_kinematic_features
 from unitest.fixtures.mock_ear_generation import _generate_refined_ear
 
 logger = logging.getLogger(__name__)
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestKinematicFeatures(unittest.TestCase):
@@ -46,7 +50,8 @@ class TestKinematicRealRaw(unittest.TestCase):
     """Validate kinematic metrics on a real raw segment."""
 
     def setUp(self) -> None:
-        raw = mne.io.read_raw_fif("unitest/ear_eog.fif", preload=True, verbose=False)
+        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
+        raw = mne.io.read_raw_fif(raw_path, preload=True, verbose=False)
         self.sfreq = raw.info["sfreq"]
         start, stop = 0.0, 30.0
         signal = raw.get_data(picks="EAR-avg_ear", start=int(start * self.sfreq), stop=int(stop * self.sfreq))[0]

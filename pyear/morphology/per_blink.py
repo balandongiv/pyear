@@ -53,7 +53,7 @@ def compute_single_blink_features(blink: Dict[str, Any], sfreq: float) -> Dict[s
     idx_up = next((i for i, v in enumerate(up_seg) if v <= thresh50), len(up_seg) - 1)
     fwhm = (idx_up + peak - start - idx_down) / sfreq
 
-    area = float(np.trapezoid(baseline - segment, dx=1 / sfreq))
+    area = float(np.trapz(baseline - segment, dx=1 / sfreq))
     cumulative = np.cumsum(baseline - segment) / sfreq
     half_area = cumulative[-1] / 2
     idx_half = next((i for i, v in enumerate(cumulative) if v >= half_area), len(cumulative) - 1)
