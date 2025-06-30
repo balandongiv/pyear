@@ -6,6 +6,7 @@ directly in the feature functions.
 import unittest
 import math
 import logging
+from pathlib import Path
 import mne
 
 from pyear.blink_events.event_features.blink_interval_distribution import (
@@ -16,12 +17,16 @@ from pyear.blink_events.event_features.blink_interval_distribution import (
 logger = logging.getLogger(__name__)
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
 class TestBlinkIntervalDistribution(unittest.TestCase):
     """Validate blink interval metrics computed on raw segments."""
 
     def setUp(self) -> None:
         """Load the sample raw file and create two 30s segments."""
-        raw = mne.io.read_raw_fif("unitest/ear_eog.fif", preload=False, verbose=False)
+        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
+        raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
         self.segments = []
         for i in range(2):
             start = 30.0 * i

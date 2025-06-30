@@ -2,6 +2,7 @@
 import unittest
 import math
 import logging
+from pathlib import Path
 import mne
 
 from pyear.frequency_domain.features import compute_frequency_domain_features
@@ -10,6 +11,9 @@ from pyear.utils import slice_raw_to_segments
 from unitest.fixtures.mock_ear_generation import _generate_refined_ear
 
 logger = logging.getLogger(__name__)
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestFrequencyFeatures(unittest.TestCase):
@@ -46,7 +50,8 @@ class TestSegmentationHelper(unittest.TestCase):
 
     def test_segment_count(self) -> None:
         """Ensure the helper slices a raw file into multiple segments."""
-        raw = mne.io.read_raw_fif("unitest/ear_eog.fif", preload=False, verbose=False)
+        raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
+        raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
         segments = slice_raw_to_segments(raw, epoch_len=30.0)
         logger.debug("Created %d segments", len(segments))
         self.assertGreater(len(segments), 1)

@@ -1,13 +1,12 @@
 """Tests for blink refinement on EEG and EOG channels.
 Here we want to improve the start, peak, and end frames of detected blinks (eeg and eog) based on the signal in the epochs."""
 import logging
-import tempfile
 from pathlib import Path
 import unittest
 
 import mne
 
-from pyear.utils.epochs import slice_into_mini_raws
+from pyear.utils import prepare_refined_segments
 from pyear.utils.refinement import refine_blinks_from_epochs, plot_refined_blinks
 
 logger = logging.getLogger(__name__)
@@ -20,20 +19,10 @@ class TestEEGEOGRefinement(unittest.TestCase):
 
     def setUp(self) -> None:
         raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
-        raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
-        (
-            self.segments,
-            self.df,
-            _,
-            _,
-        ) = slice_into_mini_raws(
-            raw,
-            Path(tempfile.mkdtemp()),
-            epoch_len=30.0,
-            blink_label=None,
-            save=False,
-            overwrite=False,
-            report=False,
+        self.segments, _ = prepare_refined_segments(
+            raw_path,
+            "EOG-EEG-eog_vert_left",
+            keep_epoch_signal=False,
         )
         self.total_ann = sum(len(seg.annotations) for seg in self.segments)
 
