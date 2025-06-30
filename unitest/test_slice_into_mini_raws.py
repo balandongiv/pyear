@@ -12,6 +12,7 @@ import unittest
 import mne
 import numpy as np
 
+from pyear.utils import prepare_refined_segments
 from pyear.utils.epochs import slice_into_mini_raws
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,20 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
         onsets = np.array([2.0, 5.0, 12.0, 18.0, 22.0])
         durations = np.repeat(0.1, len(onsets))
         raw.set_annotations(mne.Annotations(onsets, durations, ["blink"] * len(onsets)))
+
         self.tmp_dir = tempfile.TemporaryDirectory()
         self.out_dir = Path(self.tmp_dir.name)
+
+        # obtain refined segments via the preprocessing helper
+        self.segments, self.refined = prepare_refined_segments(
+            raw,
+            "EOG",
+            epoch_len=self.epoch_len,
+        )
+
+        # slice and save via the function under test
         (
-            self.segments,
+            self.raw_segments,
             self.df,
             _,
             _,
@@ -65,15 +76,21 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
         return int(mask.sum())
 
     def test_saved_equals_memory(self) -> None:
-        """Saved segments should be identical to in-memory segments."""
-        self.assertEqual(len(self.segments), len(self.saved_segments))
-        for mem, disk in zip(self.segments, self.saved_segments):
+        """Saved segments should match those returned by the slicing function."""
+        self.assertEqual(len(self.raw_segments), len(self.saved_segments))
+        for mem, disk in zip(self.raw_segments, self.saved_segments):
             np.testing.assert_allclose(mem.get_data(), disk.get_data())
             np.testing.assert_array_equal(mem.annotations.onset, disk.annotations.onset)
             self.assertListEqual(
                 list(mem.annotations.description),
                 list(disk.annotations.description),
             )
+
+    def test_refined_segments_data(self) -> None:
+        """Refined segments share the same signal data as the raw slices."""
+        self.assertEqual(len(self.segments), len(self.raw_segments))
+        for refined, orig in zip(self.segments, self.raw_segments):
+            np.testing.assert_allclose(refined.get_data(), orig.get_data())
 
     def test_blink_counts(self) -> None:
         """Blink counts match expectation for each segment."""
