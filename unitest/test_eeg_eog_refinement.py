@@ -21,7 +21,7 @@ class TestEEGEOGRefinement(unittest.TestCase):
         raw_path = PROJECT_ROOT / "unitest" / "ear_eog.fif"
         raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
         (
-            self.epochs,
+            self.segments,
             self.df,
             _,
             _,
@@ -34,11 +34,11 @@ class TestEEGEOGRefinement(unittest.TestCase):
             overwrite=False,
             report=False,
         )
-        self.total_ann = sum(len(ep.annotations) for ep in self.epochs)
+        self.total_ann = sum(len(seg.annotations) for seg in self.segments)
 
     def _run_channel(self, channel: str) -> None:
         logger.info("Refinement test on %s", channel)
-        refined = refine_blinks_from_epochs(self.epochs, channel)
+        refined = refine_blinks_from_epochs(self.segments, channel)
         self.assertEqual(len(refined), self.total_ann)
         for blink in refined:
             n_times = len(blink["epoch_signal"])
@@ -50,7 +50,7 @@ class TestEEGEOGRefinement(unittest.TestCase):
         # sanity plot for first epoch without showing
         figs = plot_refined_blinks(
             refined,
-            self.epochs[0].info["sfreq"],
+            self.segments[0].info["sfreq"],
             30.0,
             epoch_indices=[0],
             show=False,

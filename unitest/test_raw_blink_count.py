@@ -23,7 +23,7 @@ class TestRawBlinkCount(unittest.TestCase):
         expected_csv_path = PROJECT_ROOT / "unitest" / "ear_eog_blink_count_epoch.csv"
         raw = mne.io.read_raw_fif(raw_path, preload=False, verbose=False)
         (
-            self.epochs,
+            self.segments,
             self.df,
             _,
             _,
@@ -47,7 +47,7 @@ class TestRawBlinkCount(unittest.TestCase):
         """Validate blink counts for selected raw indices."""
         checks = {0: 2, 13: 4, 49: 13}
         for idx, expected in checks.items():
-            count = self._count_blinks(self.epochs[idx], label=None)
+            count = self._count_blinks(self.segments[idx], label=None)
             self.assertEqual(count, expected)
             self.assertEqual(count, int(self.df.loc[idx, "blink_count"]))
             self.assertEqual(count, int(self.expected.loc[idx, "blink_count"]))
