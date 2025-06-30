@@ -39,9 +39,12 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
             epoch_len=self.epoch_len,
         )
 
-        # slice and save via the function under test
+        # slice and save using the function under test. Although the helper
+        # above already produces segments, we call ``slice_into_mini_raws``
+        # separately to ensure its return values and saved files are
+        # consistent with the helper's output.
         (
-            self.raw_segments,
+            self.returned_segments,
             self.df,
             _,
             _,
@@ -72,8 +75,8 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
 
     def test_saved_equals_memory(self) -> None:
         """Saved segments should match those returned by the slicing function."""
-        self.assertEqual(len(self.raw_segments), len(self.saved_segments))
-        for mem, disk in zip(self.raw_segments, self.saved_segments):
+        self.assertEqual(len(self.returned_segments), len(self.saved_segments))
+        for mem, disk in zip(self.returned_segments, self.saved_segments):
             np.testing.assert_allclose(mem.get_data(), disk.get_data())
             np.testing.assert_array_equal(mem.annotations.onset, disk.annotations.onset)
             self.assertListEqual(
@@ -83,8 +86,8 @@ class TestSliceIntoMiniRaws(unittest.TestCase):
 
     def test_refined_segments_data(self) -> None:
         """Refined segments share the same signal data as the raw slices."""
-        self.assertEqual(len(self.segments), len(self.raw_segments))
-        for refined, orig in zip(self.segments, self.raw_segments):
+        self.assertEqual(len(self.segments), len(self.returned_segments))
+        for refined, orig in zip(self.segments, self.returned_segments):
             np.testing.assert_allclose(refined.get_data(), orig.get_data())
 
     def test_blink_counts(self) -> None:
